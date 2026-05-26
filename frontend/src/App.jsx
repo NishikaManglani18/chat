@@ -25,7 +25,7 @@ function App() {
 
       if (res.data) {
         setUser(res.data);
-        loadHistory();
+        
       }
 
     } catch (err) {
@@ -87,11 +87,18 @@ function App() {
 
   const logout = async () => {
 
-    await api.post("/api/auth/logout");
+    try {
 
-    setUser(null);
+      await api.post("/api/auth/logout");
 
-    setMessages([]);
+      setUser(null);
+
+      setMessages([]);
+
+    } catch (err) {
+
+      console.log(err);
+    }
   };
 
   const loadHistory = async () => {
@@ -127,23 +134,36 @@ function App() {
     try {
 
       const res = await api.post(
-        "/api/chat",
+        "/api/chat/response",
         {
           message: userText,
         }
       );
 
+      console.log(res.data);
+
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: res.data.reply,
+          content:
+            res.data?.reply ||
+            "No AI response",
         },
       ]);
 
     } catch (err) {
 
       console.log(err);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            "Backend error",
+        },
+      ]);
     }
   };
 
@@ -176,10 +196,14 @@ function App() {
 
         <button
           onClick={
-            isRegister ? register : login
+            isRegister
+              ? register
+              : login
           }
         >
-          {isRegister ? "Register" : "Login"}
+          {isRegister
+            ? "Register"
+            : "Login"}
         </button>
 
         <p

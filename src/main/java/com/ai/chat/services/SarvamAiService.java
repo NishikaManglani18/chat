@@ -1,6 +1,5 @@
 package com.ai.chat.services;
 
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -16,56 +15,115 @@ import org.springframework.web.client.RestTemplate;
 
 import com.ai.chat.models.ChatMessage;
 
-
 @Service
-
 public class SarvamAiService {
-@Value("${sarvam.api.key}")
 
-private String apikey;
+    @Value("${sarvam.api.key}")
+    private String apikey;
 
-@Value("${sarvam.model}")
-private String model;
+    @Value("${sarvam.model}")
+    private String model;
 
-private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate =
+            new RestTemplate();
 
-public String askSarvam(List<ChatMessage> history, String userMessage) {
-String url = "https://api.sarvam.ai/v1/chat/completions";
-List<Map<String,String>> message = new ArrayList<>();
+    public String askSarvam(
+            List<ChatMessage> history,
+            String userMessage
+    ) {
 
-message.add(Map.of(
-"role","system","content","You are a help AI assistance."));
+        try {
 
-for (ChatMessage msg: history ) {
-message.add(Map.of(
-"role",msg.getRole(),
-"content",msg.getContent()));
+            String url =
+                    "https://api.sarvam.ai/v1/chat/completions";
 
+            List<Map<String, String>> messages =
+                    new ArrayList<>();
 
-}
-message.add(Map.of(
-"role","user",
-"content", userMessage));
+            messages.add(Map.of(
+                    "role", "system",
+                    "content",
+                    "You are a helpful AI assistant."
+            ));
 
-Map<String, Object> body = new HashMap<>();
+            for (ChatMessage msg : history) {
 
-body.put("model",model);
-body.put("messages", message);
-body.put("temperature", 0.2);
-body.put("max_tokens", 1000);
+                messages.add(Map.of(
+                        "role", msg.getRole(),
+                        "content", msg.getContent()
+                ));
+            }
 
- HttpHeaders header = new HttpHeaders();
- header.setContentType(MediaType.APPLICATION_JSON);
- 
- header.setBearerAuth(apikey);
- HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body,header);
- 
- ResponseEntity<Map> response =
-       restTemplate.postForEntity(url, entity, Map.class);
+            messages.add(Map.of(
+                    "role", "user",
+                    "content", userMessage
+            ));
 
-List choice = (List) response.getBody().get("choices");
-Map firstChoice = (Map) choice.get(0);
-Map message1 = (Map) firstChoice.get("message");
-return message1.get("content").toString();
-}
+            Map<String, Object> body =
+                    new HashMap<>();
+
+            body.put("model", model);
+            body.put("messages", messages);
+            body.put("temperature", 0.2);
+            body.put("max_tokens", 1000);
+
+            HttpHeaders headers =
+                    new HttpHeaders();
+
+            headers.setContentType(
+                    MediaType.APPLICATION_JSON
+            );
+
+            headers.setBearerAuth(apikey);
+
+            HttpEntity<Map<String, Object>> entity =
+                    new HttpEntity<>(body, headers);
+
+            ResponseEntity<Map> response =
+                    restTemplate.postForEntity(
+                            url,
+                            entity,
+                            Map.class
+                    );
+
+            System.out.println(response.getBody());
+
+            if (response.getBody() == null) {
+                return "Empty response from AI";
+            }
+
+            List choices =
+                    (List) response.getBody()
+                            .get("choices");
+
+            if (choices == null ||
+                    choices.isEmpty()) {
+
+                return "No choices returned";
+            }
+
+            Map firstChoice =
+                    (Map) choices.get(0);
+
+            Map message =
+                    (Map) firstChoice.get("message");
+
+            if (message == null) {
+                return "No message returned";
+            }
+
+            Object content =
+                    message.get("content");
+
+            return content != null
+                    ? content.toString()
+                    : "No content returned";
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            return "AI Error: " + e.getMessage();
+        }
+    }
 }
