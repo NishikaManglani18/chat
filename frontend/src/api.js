@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8080",
+  baseURL: "https://chat-production-e9e5.up.railway.app",
   withCredentials: true,
 });
 
